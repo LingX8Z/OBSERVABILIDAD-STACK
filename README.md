@@ -87,3 +87,122 @@ OBSERVABILIDAD-STACK/
 3. **Levanta el stack**:
    ```bash
    docker-compose up --build
+    ```
+### Accede a los servicios
+
+- **Grafana:** [http://localhost:3000](http://localhost:3000)  
+  *Usuario/contraseña por defecto:* `admin` / `admin`
+
+---
+
+### Inicia el backend de prueba (si no se inicia automáticamente)
+
+Desde la carpeta `backend_Prueba`:
+
+```bash
+npm install
+node app.js
+```
+### Lanza la app Angular de prueba (opcional)
+
+Para enviar eventos simulados desde el frontend.
+
+---
+
+## Consultar y visualizar en Grafana
+
+### 1. Métricas
+
+En **Grafana**, ve a la sección **Explore** o crea un panel.
+
+Selecciona **Prometheus** como datasource.
+
+Ejemplo de consulta:
+
+```promql
+acciones
+```
+
+### 2. Logs
+
+En **Grafana**, sección **Explore**, selecciona **Loki**.
+
+Consulta básica:
+
+```logql
+{}
+```
+
+Esto mostrará todos los logs almacenados. Puedes filtrar por contenido o nivel.
+
+---
+
+### 3. Trazas
+
+En **Grafana**, ve a la sección **Traces** o usa **Tempo** como datasource en Explore.
+
+Allí puedes buscar por **traceId**, ver el recorrido de una petición y analizar latencias y cuellos de botella.
+
+---
+
+## Explicación detallada de las métricas
+
+| **Nombre de la métrica**                  | **Tipo**   | **¿Qué mide?**                                                                                   |
+|-------------------------------------------|------------|--------------------------------------------------------------------------------------------------|
+| process_cpu_user_seconds_total            | Counter    | Tiempo total de CPU (usuario) usado por el proceso Node, en segundos.                            |
+| process_cpu_system_seconds_total          | Counter    | Tiempo total de CPU (sistema) usado por el proceso Node, en segundos.                            |
+| process_cpu_seconds_total                 | Counter    | Tiempo total de CPU (usuario + sistema) usado por el proceso Node, en segundos.                  |
+| process_start_time_seconds                | Gauge      | Timestamp en el que inició el proceso Node.                                                      |
+| process_resident_memory_bytes             | Gauge      | Memoria RAM utilizada actualmente por el proceso Node.                                           |
+| process_virtual_memory_bytes              | Gauge      | Memoria virtual usada por el proceso Node.                                                       |
+| process_heap_bytes                        | Gauge      | Memoria heap usada actualmente.                                                                  |
+| process_heap_used_bytes                   | Gauge      | Memoria heap efectivamente utilizada.                                                            |
+| process_open_fds                         | Gauge      | Número de “file descriptors” abiertos (en Linux).                                                |
+| process_max_fds                          | Gauge      | Número máximo de “file descriptors” permitidos (en Linux).                                       |
+| process_uptime_seconds                    | Gauge      | Tiempo (en segundos) desde que el proceso fue iniciado.                                          |
+| nodejs_eventloop_lag_seconds              | Gauge      | Cuánto tarda el event loop de Node en reaccionar (latencia interna).                             |
+| nodejs_active_handles_total               | Gauge      | Número de handles activos (como conexiones abiertas, timers, etc).                               |
+| nodejs_active_requests_total              | Gauge      | Número de requests internos activos (como peticiones HTTP, archivos, etc).                       |
+| nodejs_heap_size_total_bytes              | Gauge      | Tamaño total del heap de Node.                                                                   |
+| nodejs_heap_size_used_bytes               | Gauge      | Tamaño del heap realmente usado.                                                                 |
+| nodejs_external_memory_bytes              | Gauge      | Memoria usada fuera del heap de Node.                                                            |
+| nodejs_heap_space_size_total_bytes        | Gauge      | Tamaño total de las zonas (espacios) del heap de Node (por tipo: new, old, code, map, etc.).     |
+| nodejs_heap_space_size_used_bytes         | Gauge      | Tamaño usado de cada espacio del heap.                                                           |
+| nodejs_heap_space_size_available_bytes    | Gauge      | Espacio disponible por cada zona del heap.                                                       |
+
+
+---
+
+## Diagrama del flujo de observabilidad
+
+```mermaid
+graph TD
+  A[App Angular] -->|OTLP HTTP 4318| B[OpenTelemetry Collector]
+ 
+  subgraph Collector Pipelines
+    B --> C1[Exporta Métricas ➔ Prometheus]
+    B --> C2[Exporta Logs ➔ Loki]
+    B --> C3[Exporta Trazas ➔ Tempo]
+  end
+ 
+  C1 --> D[Grafana]
+  C2 --> D
+  C3 --> D
+ 
+  subgraph Opcional
+    B --> E[Elasticsearch]
+    E --> F[Kibana]
+  end
+
+  ```
+
+---
+
+## Créditos
+
+- [Grafana](https://grafana.com/)
+- [Prometheus](https://prometheus.io/)
+- [Loki](https://grafana.com/oss/loki/)
+- [Tempo](https://grafana.com/oss/tempo/)
+- [OpenTelemetry](https://opentelemetry.io/)
+- [prom-client para Node.js](https://github.com/siimon/prom-client)
