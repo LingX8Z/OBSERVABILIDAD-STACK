@@ -1,0 +1,66 @@
+version: "3.8"
+
+services:
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana 
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    networks:
+      - observabilidad
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - observabilidad
+
+  loki:
+    image: grafana/loki:2.9.0
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-data:/loki-data
+      - ./loki/local-config.yaml:/etc/loki/local-config.yaml:ro
+    networks:
+      - observabilidad
+
+  tempo:
+    image: grafana/tempo:2.4.0
+    command: ["-config.file=/etc/tempo/tempo-config.yaml"]
+    ports:
+      - "3200:3200"     # Web UI (opcional)
+      - "4317:4317"     # OTLP gRPC
+    volumes:
+      - ./tempo/tempo-config.yaml:/etc/tempo/tempo-config.yaml
+
+    networks:
+      - observabilidad
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.97.0
+    command: ["--config=/etc/otel-collector-config.yml"]
+    ports:
+      - "4318:4318"   # OTLP HTTP
+    volumes:
+      - ./otel-collector-config.yml:/etc/otel-collector-config.yml
+      - ./backend_Prueba/simulado.log:/var/log/simulado.log
+    networks:
+      - observabilidad
+
+networks:
+  observabilidad:
+    driver: bridge
+
+volumes:
+  loki_data:  

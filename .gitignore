@@ -1,0 +1,42 @@
+# === Angular (frontend) ===
+telemetri_Angular/node_modules/
+telemetri_Angular/dist/
+telemetri_Angular/.angular/
+telemetri_Angular/.env
+
+# === Grafana ===
+grafana/grafana.db
+grafana/png/
+grafana/pdf/
+grafana/csv/
+grafana/plugins/        # Ignora solo si no quieres versionar plugins descargados
+
+# === Loki ===
+loki/loki-data/
+loki/storage/
+loki/chunks/
+loki/compactor/
+loki/index/
+loki/wal/
+loki/tsdb-shipper-active/
+loki/tsdb-shipper-cache/
+loki/rules/             # Ignora si las reglas son generadas, si no, déjalo fuera
+
+# === Tempo ===
+tempo/tempo-data/
+tempo/chunks/
+tempo/compactor/
+tempo/index/
+tempo/wal/
+
+# === Logs y archivos temporales ===
+backend_Prueba/simulado.log
+*.log
+*.tmp
+
+# === Archivos de bases de datos temporales (añade si usas SQLite, etc.) ===
+*.db
+
+# === Otros ===
+.DS_Store
+Thumbs.db
