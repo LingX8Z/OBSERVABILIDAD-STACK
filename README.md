@@ -24,7 +24,7 @@ Además, incluye una **aplicación Angular** de ejemplo que simula el envío de 
 ---
 
 ## Estructura del proyecto
-
+```
 OBSERVABILIDAD-STACK/
 ├── backend_Prueba/
 ├── grafana/
@@ -46,7 +46,7 @@ OBSERVABILIDAD-STACK/
 ├── otel-collector-config.yml
 ├── prometheus.yml
 └── README.md
-
+```
 
 ---
 
