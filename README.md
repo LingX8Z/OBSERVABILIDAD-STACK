@@ -25,19 +25,27 @@ Además, incluye una **aplicación Angular** de ejemplo que simula el envío de 
 
 ## Estructura del proyecto
 
-observabilidad-stack/
+OBSERVABILIDAD-STACK/
+├── backend_Prueba/
+├── grafana/
+│   ├── dashboards/
+│   └── provisioning/
+│       ├── datasources/
+│       │   └── datasources.yml
+│       └── dashboards.yml
+├── loki/
+│   ├── loki-data/
+│   ├── storage/
+│   └── local-config.yaml
+├── telemetri_Angular/
+├── tempo/
+│   └── tempo-config.yaml
+├── .gitignore
 ├── docker-compose.yml
+├── EjercicioOpenTelemetry.pdf
 ├── otel-collector-config.yml
 ├── prometheus.yml
-├── backend_Prueba/
-│ ├── app.js
-│ └── simulado.log
-├── angular-app/
-│ └── (código Angular de prueba)
-└── grafana/
-└── provisioning/
-├── datasources.yml
-└── dashboards.yml
+└── README.md
 
 
 ---
