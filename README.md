@@ -189,10 +189,7 @@ graph TD
   C2 --> D
   C3 --> D
  
-  subgraph Opcional
-    B --> E[Elasticsearch]
-    E --> F[Kibana]
-  end
+
 
   ```
 
