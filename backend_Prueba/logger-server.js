@@ -36,10 +36,6 @@ app.get('/metrics', async (req, res) => {
   res.end(await client.register.metrics());
 });
 
-app.listen(3001, () => {
-  console.log('Backend escuchando en 3001');
-});
-
 
 app.post('/api/log/flujo', (req, res) => {
   // Lee la cabecera traceparent si existe

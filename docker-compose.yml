@@ -54,9 +54,25 @@ services:
       - "4318:4318"   # OTLP HTTP
     volumes:
       - ./otel-collector-config.yml:/etc/otel-collector-config.yml
-      - ./backend_Prueba/simulado.log:/var/log/simulado.log
+      - logs_shared:/var/log
     networks:
       - observabilidad
+
+  backend:
+    build:
+      context: ./backend_Prueba   
+    ports:
+      - "3001:3001"        # Angular (en tu host) seguirá llamando a http://localhost:3001
+    environment:
+      # El tracing ya coge la URL del ENV anterior, pero por si acaso:
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318/v1/traces
+      # CORS si lo necesitas:
+      - CORS_ORIGIN=http://localhost:4200
+    volumes:
+      # Carpeta compartida para el log que luego lee filelog del Collector
+      - logs_shared:/app/logs
+    networks: [observabilidad]
+
 
 networks:
   observabilidad:
@@ -64,3 +80,4 @@ networks:
 
 volumes:
   loki_data:  
+  logs_shared:
