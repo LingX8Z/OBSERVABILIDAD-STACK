@@ -2,22 +2,28 @@ receivers:
   otlp:
     protocols:
       http:
+        endpoint: 0.0.0.0:4318
         cors:
-          allowed_origins: 
+          allowed_origins:
             - http://localhost:4200
             - http://127.0.0.1:4200
-            - http://localhost:8080  
-          allowed_headers: 
+            - http://localhost:8080
+          allowed_headers:
             - Content-Type
             - Accept
             - User-Agent
             - Authorization
             - X-Requested-With
       grpc:
+        endpoint: 0.0.0.0:4317
+
   filelog:
     include:
       - /var/log/simulado.log
     start_at: beginning
+
+processors:
+  batch:
 
 exporters:
   prometheus:
@@ -25,16 +31,21 @@ exporters:
 
   loki:
     endpoint: "http://loki:3100/loki/api/v1/push"
+    default_labels_enabled:
+      level: true
+      job: true
+      instance: false
+      exporter: true
 
-  otlp:
-    endpoint: "http://tempo:4317"
+  otlp/tempo:
+    endpoint: "tempo:4317"  
     tls:
       insecure: true
 
-processors:
-  batch:
-
 service:
+  telemetry:
+    logs:
+      level: "debug"
   pipelines:
     metrics:
       receivers: ["otlp"]
@@ -43,9 +54,10 @@ service:
 
     logs:
       receivers: ["filelog", "otlp"]
+      processors: ["batch"]
       exporters: ["loki"]
 
     traces:
       receivers: ["otlp"]
       processors: ["batch"]
-      exporters: ["otlp"]
+      exporters: ["otlp/tempo"]

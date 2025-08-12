@@ -53,7 +53,7 @@ services:
       - "4318:4318"   # OTLP HTTP
     volumes:
       - ./otel-collector-config.yml:/etc/otel-collector-config.yml
-      - logs_shared:/var/log
+      - ./backend_Prueba/simulado.log:/var/log/simulado.log:ro
     networks:
       - observabilidad
 
@@ -67,7 +67,7 @@ services:
       - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318/v1/traces
       - CORS_ORIGIN=http://localhost:4200
     volumes:
-      - logs_shared:/app/logs         # ⬅️ compartimos carpeta
+      - ./backend_Prueba/simulado.log:/app/logs/simulado.log 
     depends_on: [otel-collector]
     networks: [observabilidad]
 
@@ -78,4 +78,3 @@ networks:
 
 volumes:
   loki_data:  
-  logs_shared:
