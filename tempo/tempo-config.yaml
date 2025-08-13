@@ -16,7 +16,7 @@ distributor:
 ingester:
   # Cuando una traza queda inactiva 'trace_idle_period', se cierra el bloque
   trace_idle_period: 10s
-  max_block_bytes: 1048576     # 1 MiB
+  max_block_bytes: 1048576  
   max_block_duration: 5m
 
 compactor:

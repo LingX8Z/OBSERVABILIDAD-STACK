@@ -19,7 +19,6 @@ compactor:
 
 ingester:
   lifecycler:
-    # dirección interna del ingester
     address: 127.0.0.1
     ring:
       kvstore:
