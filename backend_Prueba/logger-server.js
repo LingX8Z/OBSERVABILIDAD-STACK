@@ -14,26 +14,27 @@ app.use(express.json());
 const client = require('prom-client');
 
 // Métrica simple
-const collectDefaultMetrics = client.collectDefaultMetrics;
-collectDefaultMetrics();
+const register = client.register;
+client.collectDefaultMetrics();
 
-
-// Definir la métrica personalizada
+// Counter con nombre canónico y etiquetas
 const accionesCounter = new client.Counter({
-  name: 'acciones',
-  help: 'Acciones realizadas desde el frontend'
+  name: 'app_acciones_total',                // terminar en _total
+  help: 'Acciones realizadas desde el frontend',
+  labelNames: ['action_type']                // añade contexto
 });
 
-// Endpoint que incrementa el contador
+// Incremento con etiqueta (ejemplo)
 app.post('/api/incrementa-accion', (req, res) => {
-  accionesCounter.inc();
+  const tipo = req.body?.type || 'generic';
+  accionesCounter.inc({ action_type: tipo });
   res.sendStatus(200);
 });
 
-// Endpoint para Prometheus
+// /metrics
 app.get('/metrics', async (req, res) => {
-  res.set('Content-Type', client.register.contentType);
-  res.end(await client.register.metrics());
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
 });
 
 

@@ -11,6 +11,8 @@ services:
       - prometheus
       - loki
       - tempo
+    environment:
+      - GF_METRICS_ENABLED=true 
     networks:
       - observabilidad
 
@@ -19,7 +21,11 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
     networks:
       - observabilidad
 
@@ -38,11 +44,11 @@ services:
     image: grafana/tempo:2.4.0
     command: ["-config.file=/etc/tempo/tempo-config.yaml"]
     ports:
-      - "3200:3200"     # Web UI (opcional)
+      - "3200:3200"     # HTTP API / status
       - "4317:4317"     # OTLP gRPC
     volumes:
-      - ./tempo/tempo-config.yaml:/etc/tempo/tempo-config.yaml
-
+      - tempo_data:/var/tempo
+      - ./tempo/tempo-config.yaml:/etc/tempo/tempo-config.yaml:ro
     networks:
       - observabilidad
 
@@ -77,4 +83,6 @@ networks:
     driver: bridge
 
 volumes:
+  prometheus_data:
   loki_data:  
+  tempo_data:

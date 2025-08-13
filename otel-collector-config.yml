@@ -23,7 +23,18 @@ receivers:
     start_at: beginning
 
 processors:
-  batch:
+  attributes/log:
+    actions:
+      - action: upsert
+        key: service.name
+        value: api-logger
+      - action: upsert
+        key: service.name
+        value: demo-app
+      - action: upsert
+        key: log.source
+        value: filelog
+  batch: {}
 
 exporters:
   prometheus:
@@ -38,7 +49,7 @@ exporters:
       exporter: true
 
   otlp/tempo:
-    endpoint: "tempo:4317"  
+    endpoint: "tempo:4317"
     tls:
       insecure: true
 
@@ -54,7 +65,7 @@ service:
 
     logs:
       receivers: ["filelog", "otlp"]
-      processors: ["batch"]
+      processors: ["attributes/log", "batch"]
       exporters: ["loki"]
 
     traces:
