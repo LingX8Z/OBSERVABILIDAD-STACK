@@ -77,6 +77,27 @@ services:
     depends_on: [otel-collector]
     networks: [observabilidad]
 
+  frontend:
+    build:
+      context: ./telemetri_Angular
+      dockerfile: Dockerfile
+    ports:
+      - "4200:4200"
+    environment:
+      - NG_CLI_ANALYTICS=false
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    volumes:
+      - ./telemetri_Angular:/app
+      - /app/node_modules
+    depends_on:
+      - otel-collector
+      - backend
+    networks:
+      - observabilidad
+
+
+
 
 networks:
   observabilidad:

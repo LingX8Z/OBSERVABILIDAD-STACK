@@ -19,15 +19,12 @@ receivers:
 
   filelog:
     include:
-      - /var/log/simulado.log
+      - /var/backend_Prueba/simulado.log
     start_at: beginning
 
 processors:
   attributes/log:
     actions:
-      - action: upsert
-        key: service.name
-        value: api-logger
       - action: upsert
         key: service.name
         value: demo-app
