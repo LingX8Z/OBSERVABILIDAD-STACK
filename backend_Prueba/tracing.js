@@ -2,64 +2,69 @@
 'use strict';
 
 const { NodeSDK } = require('@opentelemetry/sdk-node');
-const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
-const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
-const { Resource } = require('@opentelemetry/resources');
 const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
-
-// 👇 Añadimos ExpressInstrumentation para renombrar spans
+const { Resource } = require('@opentelemetry/resources');
+const { OTLPTraceExporter } = require('@opentelemetry/exporter-trace-otlp-http');
+const { OTLPLogExporter } = require('@opentelemetry/exporter-logs-otlp-http');
+const { HttpInstrumentation } = require('@opentelemetry/instrumentation-http');
 const { ExpressInstrumentation } = require('@opentelemetry/instrumentation-express');
+const { logs, LoggerProvider } = require('@opentelemetry/api-logs');
+const { SimpleLogRecordProcessor, LoggerProvider: SDKLoggerProvider } = require('@opentelemetry/sdk-logs');
 
-// --- Nombres de negocio por ruta (ajusta a tu lógica) ---
-const businessNames = new Map([
-  ['/api/log',        'backend-procesar-log'],
-  ['/api/log/flujo',  'backend-flujo-completo'],
-  ['/metrics',        'exponer-metricas'],
-]);
-
-const sdk = new NodeSDK({
-  resource: new Resource({
-    // ⬇️ fuerza demo-app salvo que lo sobrescribas por env
-    [SemanticResourceAttributes.SERVICE_NAME]:
-      process.env.OTEL_SERVICE_NAME || 'demo-app',
-    [SemanticResourceAttributes.SERVICE_NAMESPACE]: 'demo',              // opcional
-    [SemanticResourceAttributes.SERVICE_VERSION]: '1.0.0',               // opcional
-    [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]:
-      process.env.NODE_ENV || 'development',                             // opcional
-  }),
-
-  traceExporter: new OTLPTraceExporter({
-    // Collector OTLP/HTTP
-    url: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
-      || 'http://otel-collector:4318/v1/traces',
-  }),
-
-  instrumentations: [
-    // Auto-instrumentación (http, express, fs,…)
-    getNodeAutoInstrumentations({
-      // Descomenta si quieres reducir ruido en rutas estáticas
-      // '@opentelemetry/instrumentation-fs': { enabled: false },
-    }),
-
-    // Hook específico de Express para renombrar spans
-    new ExpressInstrumentation({
-      requestHook: (span, info) => {
-        const route = info.request?.route?.path || info.request?.url || '';
-        const name = businessNames.get(route);
-        if (name) {
-          span.updateName(name);
-        } else if (route) {
-          // Nombre más compacto por defecto
-          span.updateName(`api ${info.request.method} ${route}`);
-        }
-      },
-    }),
-  ],
+// ========= Resource =========
+const resource = new Resource({
+  [SemanticResourceAttributes.SERVICE_NAME]: 'demo-app',
 });
 
-// Arranque del SDK
-sdk.start().catch((err) => console.error('Error starting OTel SDK', err));
+// ========= Exporters =========
+const otlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318';
+const traceExporter = new OTLPTraceExporter({
+  url: `${otlpEndpoint}/v1/traces`,
+});
 
-// Cierre limpio
-process.on('SIGTERM', () => sdk.shutdown().finally(() => process.exit(0)));
-process.on('SIGINT',  () => sdk.shutdown().finally(() => process.exit(0)));
+// (Opcional) Logs por OTLP (para /api/log/otlp)
+const logExporter = new OTLPLogExporter({
+  url: `${otlpEndpoint}/v1/logs`,
+});
+
+// ========= Instrumentations =========
+// IMPORTANTÍSIMO: ignoramos las rutas que no deben crear span HTTP de servidor
+const httpInstrumentation = new HttpInstrumentation({
+  ignoreIncomingPaths: [
+    /^\/api\/log$/,        // traza simple -> 0 spans en server
+    /^\/api\/log\/flujo$/  // flujo completo -> evitamos el span HTTP extra
+  ],
+  // Puedes dejar outgoing por defecto; si quieres ignorar llamadas salientes específicas, añade ignoreOutgoingUrls.
+});
+
+const expressInstrumentation = new ExpressInstrumentation();
+
+// ========= SDK Node (traces) =========
+const sdk = new NodeSDK({
+  resource,
+  traceExporter,
+  instrumentations: [httpInstrumentation, expressInstrumentation],
+});
+
+// ========= Logs SDK (opcional, solo si usas logs.getLogger) =========
+const loggerProvider = new SDKLoggerProvider({ resource });
+loggerProvider.addLogRecordProcessor(new SimpleLogRecordProcessor(logExporter));
+logs.setGlobalLoggerProvider(loggerProvider);
+
+// ========= Start / Graceful shutdown =========
+sdk.start()
+  .then(() => {
+    console.log('[OTel] Tracing iniciado');
+  })
+  .catch((err) => {
+    console.error('[OTel] Error iniciando tracing', err);
+  });
+
+process.on('SIGTERM', async () => {
+  try {
+    await sdk.shutdown();
+    await loggerProvider.shutdown?.();
+  } finally {
+    process.exit(0);
+  }
+});

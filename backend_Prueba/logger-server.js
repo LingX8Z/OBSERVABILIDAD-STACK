@@ -38,78 +38,40 @@ app.get("/metrics", async (req, res) => {
 });
 
 // --------- ENDPOINT CON FLUJO COMPLETO ---------
-app.post("/api/log/flujo", (req, res) => {
-  const traceparent = req.headers["traceparent"];
+app.post('/api/log/flujo', (req, res) => {
+  const tracer = trace.getTracer('demo-app');
+
+  // Propaga la traza del front si llega header traceparent:
+  const tp = req.headers['traceparent'];
   let ctx = context.active();
-  if (traceparent) {
-    ctx = propagation.extract(context.active(), { traceparent });
-  }
-  const tracer = trace.getTracer("demo-app");
+  if (tp) ctx = propagation.extract(context.active(), { traceparent: tp });
 
-  // Un solo span raíz "flujo-completo", con varios hijos dentro:
-  tracer.startActiveSpan("flujo-completo", {}, ctx, (rootSpan) => {
-    // Span hijo 1
-    tracer.startActiveSpan("inicio", {}, context.active(), (span1) => {
-      const logMessage = `[${new Date().toISOString()}] info: Inicio del flujo (traceId=${
-        span1.spanContext().traceId
-      }, spanId=${span1.spanContext().spanId})\n`;
-      fs.appendFileSync(path.join(__dirname, "simulado.log"), logMessage);
-      span1.end();
+  tracer.startActiveSpan('inicio', {}, ctx, (s1) => {
+    // ... trabajo 1 ...
+    s1.end();
+
+    tracer.startActiveSpan('proceso-intermedio', {}, context.active(), (s2) => {
+      // ... trabajo 2 ...
+      s2.end();
+
+      tracer.startActiveSpan('fin', {}, context.active(), (s3) => {
+        // ... trabajo 3 ...
+        s3.end();
+
+        res.status(201).json({ ok: true });
+      });
     });
-
-    // Span hijo 2
-    tracer.startActiveSpan(
-      "proceso-intermedio",
-      {},
-      context.active(),
-      (span2) => {
-        const logMessage = `[${new Date().toISOString()}] info: Proceso intermedio (traceId=${
-          span2.spanContext().traceId
-        }, spanId=${span2.spanContext().spanId})\n`;
-        fs.appendFileSync(path.join(__dirname, "simulado.log"), logMessage);
-        span2.end();
-      }
-    );
-
-    // Span hijo 3
-    tracer.startActiveSpan("fin", {}, context.active(), (span3) => {
-      const logMessage = `[${new Date().toISOString()}] info: Fin del flujo (traceId=${
-        span3.spanContext().traceId
-      }, spanId=${span3.spanContext().spanId})\n`;
-      fs.appendFileSync(path.join(__dirname, "simulado.log"), logMessage);
-      span3.end();
-    });
-
-    rootSpan.end();
-    res.status(201).send({ ok: true });
   });
 });
 
+
 // --------- ENDPOINT LOG INDIVIDUAL ---------
 app.post("/api/log", (req, res) => {
-  const traceparent = req.headers["traceparent"];
-
-  let ctx = context.active();
-  if (traceparent) {
-    ctx = propagation.extract(context.active(), { traceparent });
-  }
-
-  const tracer = trace.getTracer("demo-app");
-
-  tracer.startActiveSpan("procesar-log", {}, ctx, (span) => {
-    const traceId = span.spanContext().traceId;
-    const spanId = span.spanContext().spanId;
-
-    const logMessage =
-      `[${new Date().toISOString()}] ${req.body.level || "info"}: ${
-        req.body.message
-      } ` + `(traceId=${traceId}, spanId=${spanId})\n`;
-
-    fs.appendFileSync(path.join(__dirname, "simulado.log"), logMessage);
-
-    span.end();
-    res.status(201).send({ ok: true });
-  });
+  const logMessage = `[${new Date().toISOString()}] ${
+    req.body.level || "info"
+  }: ${req.body.message}\n`;
+  fs.appendFileSync(path.join(__dirname, "simulado.log"), logMessage);
+  res.status(201).send({ ok: true });
 });
 
 // --- Utilidad: mapear nivel a severidad OTel
