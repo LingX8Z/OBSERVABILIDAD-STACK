@@ -1,5 +1,5 @@
 global:
-  scrape_interval: 5s            # frecuencia de scrapes
+  scrape_interval: 600s            # frecuencia de scrapes
   evaluation_interval: 15s       # eval de reglas (si añades alertas/grabaciones)
   external_labels:
     cluster: "local-dev"         # útil si federas o usas Thanos, etc.

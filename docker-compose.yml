@@ -70,10 +70,11 @@ services:
     ports:
       - "3001:3001"
     environment:
+      - OTEL_SERVICE_NAME=demo-app
       - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318/v1/traces
       - CORS_ORIGIN=http://localhost:4200
     volumes:
-      - ./backend_Prueba/simulado.log:/app/logs/simulado.log 
+      - ./backend_Prueba/simulado.log:/app/simulado.log 
     depends_on: [otel-collector]
     networks: [observabilidad]
 
