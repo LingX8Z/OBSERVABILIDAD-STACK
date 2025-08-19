@@ -18,11 +18,12 @@ receivers:
         endpoint: 0.0.0.0:4317
 
   filelog:
-    include:
-      - /var/log/simulado.log   
+    include: [/var/log/simulado.log]
     start_at: beginning
+    # --- NUEVO: parseo de fecha, nivel y cuerpo ---
     operators:
       - type: regex_parser
+        # Formato: [ISO8601] <level>: <mensaje>
         regex: '^\[(?P<ts>.+?)\]\s(?P<level>\w+):\s(?P<body>.*)$'
         parse_to: attributes
       - type: time_parser
@@ -42,6 +43,18 @@ processors:
         key: log.source
         value: filelog
 
+  # --- NUEVO: si llega un atributo "level" por OTLP, convertirlo a severidad ---
+  transform/set-severity:
+    log_statements:
+      - context: log
+        statements:
+          - set(severity_text, attributes["level"]) where attributes["level"] != nil
+          # (Opcional) fija severity_number según el texto
+          - set(severity_number, 5)  where attributes["level"] == "debug"
+          - set(severity_number, 9)  where attributes["level"] == "info"
+          - set(severity_number, 13) where attributes["level"] == "warn"
+          - set(severity_number, 17) where attributes["level"] == "error"
+
   resource/set-service:
     attributes:
       - action: upsert
@@ -60,7 +73,7 @@ exporters:
   loki:
     endpoint: "http://loki:3100/loki/api/v1/push"
     default_labels_enabled:
-      level: true
+      level: true      # <-- importante para crear la etiqueta "level"
       job: true
       instance: false
       exporter: true
@@ -74,6 +87,7 @@ service:
   telemetry:
     logs:
       level: "debug"
+
   pipelines:
     metrics:
       receivers: ["otlp"]
@@ -82,7 +96,8 @@ service:
 
     logs:
       receivers: ["filelog", "otlp"]
-      processors: ["attributes/from-filelog", "resource/set-service", "batch"]
+      # --- IMPORTANTE: incluir transform/set-severity antes de exportar a Loki ---
+      processors: ["attributes/from-filelog", "transform/set-severity", "resource/set-service", "batch"]
       exporters: ["loki"]
 
     traces:
