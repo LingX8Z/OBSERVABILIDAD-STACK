@@ -12,7 +12,11 @@ services:
       - loki
       - tempo
     environment:
-      - GF_METRICS_ENABLED=true 
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_SECURITY_COOKIE_SAMESITE=lax     # ← en HTTP usa 'lax' (o elimina la variable)
+      - GF_SECURITY_COOKIE_SECURE=false     # ← asegura que la cookie no exija HTTPS
     networks:
       - observabilidad
 

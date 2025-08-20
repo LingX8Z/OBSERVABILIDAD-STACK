@@ -15,11 +15,15 @@ const client = require("prom-client");
 
 // Métrica simple
 const register = client.register;
-client.collectDefaultMetrics();
+client.collectDefaultMetrics({
+  register,
+  eventLoopMonitoringPrecision: 10,           // <- NECESARIO para event loop
+  gcDurationBuckets: [0.001, 0.01, 0.1, 0.5, 1, 2] // <- opcional pero recomendable
+});
 
 // Counter con nombre canónico y etiquetas
 const accionesCounter = new client.Counter({
-  name: "app_acciones_total", // terminar en _total
+  name: "Metrica", // terminar en _total
   help: "Acciones realizadas desde el frontend",
   labelNames: ["action_type"], // añade contexto
 });
@@ -32,8 +36,8 @@ app.post("/api/incrementa-accion", (req, res) => {
 });
 
 // /metrics
-app.get("/metrics", async (req, res) => {
-  res.set("Content-Type", register.contentType);
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
   res.end(await register.metrics());
 });
 
