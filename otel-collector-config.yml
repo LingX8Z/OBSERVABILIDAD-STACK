@@ -19,15 +19,12 @@ exporters:
 
 processors:
   batch: {}
-  spanmetrics:
-    metrics_exporter: prometheus
-    latency_histogram_buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch, spanmetrics]
+      processors: [batch]
       exporters: [otlp]
     metrics:
       receivers: [otlp]
