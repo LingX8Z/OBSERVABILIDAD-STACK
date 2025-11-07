@@ -37,8 +37,8 @@
                 "path": "img/table.png"
             }
         ],
-        "version": "1.0.25",
-        "updated": "2025-08-05",
+        "version": "1.0.30",
+        "updated": "2025-10-22",
         "links": [
             {
                 "name": "Github",
@@ -67,18 +67,29 @@
         "extensions": {
             "exposedComponents": [
                 "grafana-adaptivelogs-app/temporary-exemptions/v1",
-                "grafana-lokiexplore-app/embedded-logs-exploration/v1"
+                "grafana-lokiexplore-app/embedded-logs-exploration/v1",
+                "grafana-asserts-app/insights-timeline-widget/v1"
             ]
         }
     },
     "preload": true,
     "extensions": {
+        "addedComponents": [
+            {
+                "targets": [
+                    "grafana-asserts-app/insights-timeline-widget/v1"
+                ],
+                "title": "Insights Timeline Widget",
+                "description": "Widget for displaying insights timeline in other apps"
+            }
+        ],
         "addedLinks": [
             {
                 "targets": [
                     "grafana/dashboard/panel/menu",
                     "grafana/explore/toolbar/action",
-                    "grafana-metricsdrilldown-app/open-in-logs-drilldown/v1"
+                    "grafana-metricsdrilldown-app/open-in-logs-drilldown/v1",
+                    "grafana-assistant-app/navigateToDrilldown/v1"
                 ],
                 "title": "Open in Grafana Logs Drilldown",
                 "description": "Open current query in the Grafana Logs Drilldown view"

@@ -4,103 +4,32 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
         cors:
-          allowed_origins:
-            - http://localhost:4200
-            - http://127.0.0.1:4200
-            - http://localhost:8080
-          allowed_headers:
-            - Content-Type
-            - Accept
-            - User-Agent
-            - Authorization
-            - X-Requested-With
-      grpc:
-        endpoint: 0.0.0.0:4317
-
-  filelog:
-    include: [/var/log/simulado.log]
-    start_at: beginning
-    # --- NUEVO: parseo de fecha, nivel y cuerpo ---
-    operators:
-      - type: regex_parser
-        # Formato: [ISO8601] <level>: <mensaje>
-        regex: '^\[(?P<ts>.+?)\]\s(?P<level>\w+):\s(?P<body>.*)$'
-        parse_to: attributes
-      - type: time_parser
-        parse_from: attributes.ts
-        layout_type: gotime
-        layout: 2006-01-02T15:04:05.000Z07:00
-      - type: move
-        from: attributes.body
-        to: body
-      - type: severity_parser
-        parse_from: attributes.level
-
-processors:
-  attributes/from-filelog:
-    actions:
-      - action: upsert
-        key: log.source
-        value: filelog
-
-  # --- NUEVO: si llega un atributo "level" por OTLP, convertirlo a severidad ---
-  transform/set-severity:
-    log_statements:
-      - context: log
-        statements:
-          - set(severity_text, attributes["level"]) where attributes["level"] != nil
-          # (Opcional) fija severity_number según el texto
-          - set(severity_number, 5)  where attributes["level"] == "debug"
-          - set(severity_number, 9)  where attributes["level"] == "info"
-          - set(severity_number, 13) where attributes["level"] == "warn"
-          - set(severity_number, 17) where attributes["level"] == "error"
-
-  resource/set-service:
-    attributes:
-      - action: upsert
-        key: service.name
-        value: demo-app
-      - action: upsert
-        key: loki.resource.labels
-        value: service.name,log.source
-
-  batch: {}
+          allowed_origins: ["http://localhost:4200"]
+          allowed_headers: ["*"]
 
 exporters:
-  prometheus:
-    endpoint: "0.0.0.0:8889"
-
-  loki:
-    endpoint: "http://loki:3100/loki/api/v1/push"
-    default_labels_enabled:
-      level: true      # <-- importante para crear la etiqueta "level"
-      job: true
-      instance: false
-      exporter: true
-
-  otlp/tempo:
-    endpoint: "tempo:4317"
+  otlp:
+    endpoint: tempo:4317
     tls:
       insecure: true
+  prometheus:
+    endpoint: 0.0.0.0:9464
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+
+processors:
+  batch: {}
+  spanmetrics:
+    metrics_exporter: prometheus
+    latency_histogram_buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]
 
 service:
-  telemetry:
-    logs:
-      level: "debug"
-
   pipelines:
-    metrics:
-      receivers: ["otlp"]
-      processors: ["batch"]
-      exporters: ["prometheus"]
-
-    logs:
-      receivers: ["filelog", "otlp"]
-      # --- IMPORTANTE: incluir transform/set-severity antes de exportar a Loki ---
-      processors: ["attributes/from-filelog", "transform/set-severity", "resource/set-service", "batch"]
-      exporters: ["loki"]
-
     traces:
-      receivers: ["otlp"]
-      processors: ["batch"]
-      exporters: ["otlp/tempo"]
+      receivers: [otlp]
+      processors: [batch, spanmetrics]
+      exporters: [otlp]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]

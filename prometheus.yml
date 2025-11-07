@@ -1,5 +1,5 @@
 global:
-  scrape_interval: 600s            # frecuencia de scrapes
+  scrape_interval: 15s            # frecuencia de scrapes
   evaluation_interval: 15s       # eval de reglas (si añades alertas/grabaciones)
   external_labels:
     cluster: "local-dev"         # útil si federas o usas Thanos, etc.
@@ -13,32 +13,31 @@ scrape_configs:
   # 2) OTel Collector: expone métricas en :8889 (exporter prometheus del Collector)
   - job_name: 'otel-collector'
     static_configs:
-      - targets: ['otel-collector:8889']
+      - targets: ['otel-collector:9464']
 
-  # 3) Backend Node: expone /metrics en :3001
-  - job_name: 'backend'
-    metrics_path: /metrics
-    static_configs:
-      - targets: ['backend:3001']
+
     # Opcional: añade etiquetas comunes para filtrar por entorno/servicio
-    relabel_configs:
-      - target_label: env
-        replacement: dev
-      - target_label: service
-        replacement: demo-app
+  
+   # relabel_configs:
+    #  - target_label: env
+    #    replacement: dev
+    #  - target_label: service
+    #    replacement: demo-app
 
   # 4) Loki: sus métricas internas en /metrics
-  - job_name: 'loki'
-    static_configs:
-      - targets: ['loki:3100']
+ # - job_name: 'loki'
+  #  static_configs:
+   #   - targets: ['loki:3100']
 
   # 5) Tempo: sus métricas internas en /metrics
-  - job_name: 'tempo'
-    static_configs:
-      - targets: ['tempo:3200']
+ # - job_name: 'tempo'
+ #   static_configs:
+  #    - targets: ['tempo:3200']
 
   # 6) Grafana (opcional): activa GF_METRICS_ENABLED=true en docker-compose
-  - job_name: 'grafana'
-    static_configs:
-      - targets: ['grafana:3000']
-    metrics_path: /metrics
+  
+ # - job_name: 'grafana'
+ #   static_configs:
+#      - targets: ['grafana:3000']
+#    metrics_path: /metrics
+    
